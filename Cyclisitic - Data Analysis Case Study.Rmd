@@ -1,0 +1,482 @@
+---
+title: "Cyclistic Data Analysis Project"
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
+---
+
+# Introduction
+
+A Case Study of a fictional company "Cyclistic". A bike-share program that features more than 5,800 bicycles and 600 docking stations. Cyclistic sets itself apart by also offering reclining bikes, hand tricycles, and cargo bikes, making bike-share more inclusive to people with disabilities and riders who can’t use a standard two-wheeled bike. The majority of riders opt for traditional bikes; about 8% of riders use the assistive options. Cyclistic users are more likely to ride for leisure, but about 30% use them to commute to work each day.
+
+## Dependency
+
+`tidyverse` package mus be installed to work on the data.
+
+```{r}
+library("tidyverse")
+```
+
+# Ask
+
+## Scenario
+
+You are a junior data analyst working in the marketing analyst team at Cyclistic, a bike-share company in Chicago. The director of marketing believes the company’s future success depends on maximizing the number of annual memberships. Therefore, your team wants to understand how casual riders and annual members use Cyclistic bikes differently. From these insights, your team will design a new marketing strategy to convert casual riders into annual members. But first, Cyclistic executives must approve your recommendations, so they must be backed up with compelling data insights and professional data visualizations.
+
+## Guiding questions
+
+* **What is the problem you are trying to solve?**
+
+To determine market strategies aimed at converting casual riders into annual members.
+
+* **How can your insights drive business decisions?**
+
+Insights of this analysis can be used to design strategies to increase annual members.
+
+## Key tasks
+
+- [x] Identify the business task
+- [x] Consider key stakeholders
+
+## Deliverable
+
+- [x] A clear statement of the business task
+    
+Find the differences between casual and annual members riders and how digital media could influence them.
+
+# Prepare
+
+The data used in this project is open-source.
+
+## Guiding questions
+
+* **Where is your data located?**
+
+The data is located in Amazon AWS S3 bucket. The dataset link is: [https://divvy-tripdata.s3.amazonaws.com/index.html](https://divvy-tripdata.s3.amazonaws.com/index.html)
+
+* **How is the data organized?**
+
+The data is organized on the basis of months.
+
+* **Are there issues with bias or credibility in this data? Does your data ROCCC?**
+
+The data is ROCCC, since, the population of data is given by the company itself. It is reliable, original, concurrent, comprehensive, current and cited.
+
+* **How are you addressing licensing, privacy, security, and accessibility?**
+
+The data does not contain any personally identifiable information. It is licensed by company itself.
+
+* **How did you verify the data’s integrity?**
+
+Data is consistent and has proper data types.
+
+* **How does it help you answer your question?**
+
+This data can provide insights about the riders' usage of services provided by Cyclistic.
+
+* **Are there any problems with the data?**
+
+The nomenclature of the data files is inconsistent.
+
+## Key tasks
+
+- [x] Download data and store it appropriately.
+- [x] Identify how it’s organized.
+- [x] Sort and filter the data.
+- [x] Determine the credibility of the data.
+
+## Deliverable
+
+- [x] A description of all data sources used
+
+A collection of data from July, 2021 to June, 2022 given by Cyclistic.
+
+# Process
+
+A pre-processing step of data analysis to make sure the data is ready for analysis operations.
+
+## Cleaning
+
+### Merging of different data sources.
+
+```{r}
+csv_files <- list.files(path = "./data", recursive = TRUE, full.names = TRUE)
+data_merged <- do.call(rbind, lapply(csv_files, read.csv))
+head(data_merged)
+```
+
+### Remove Empty values
+
+```{r}
+data_merged_nn <- data_merged[!apply(data_merged == "", 1, all),]
+print(paste("Deleted ", nrow(data_merged) - nrow(data_merged_nn), " rows."))
+data_merged <- data_merged_nn
+```
+
+### Removing Duplicates
+
+```{r}
+data_merged_rd <- data_merged[!duplicated(data_merged$ride_id), ]
+print(paste("Deleted ", nrow(data_merged) - nrow(data_merged_rd), " rows."))
+data_merged <- data_merged_rd
+```
+### Formatting Date and Time
+
+```{r}
+data_merged$started_at <- as.POSIXct(data_merged$started_at, format = "%Y-%m-%d %H:%M:%S")
+data_merged$ended_at <- as.POSIXct(data_merged$ended_at, format = "%Y-%m-%d %H:%M:%S")
+```
+
+## Data Transformation
+
+### ride_time_m
+
+It represents the duration of ride in minutes.
+
+```{r}
+data_merged <- mutate(data_merged, ride_time_m = as.numeric(data_merged$ended_at - data_merged$started_at) / 60)
+summary(data_merged)
+```
+
+### year_month
+
+An attribute with year and month
+
+```{r}
+data_merged <- mutate(data_merged,
+                      year_month = paste(strftime(data_merged$started_at, "%Y"), "-",
+                                                      strftime(data_merged$started_at, "%m"),
+                                         paste("(",strftime(data_merged$started_at, "%b"), ")", sep="")))
+unique(data_merged$year_month)
+```
+
+### weekday
+
+Represents the day of the week
+
+```{r}
+data_merged <- mutate(data_merged, weekday = paste(strftime(data_merged$ended_at, "%u"),
+                                                   "-", strftime(data_merged$ended_at, "%a")))
+unique(data_merged$weekday)
+```
+
+### start_hour
+
+Represents hour of the day
+
+```{r}
+data_merged <- mutate(data_merged, start_hour = strftime(data_merged$ended_at, "%H"))
+unique(data_merged$start_hour)
+```
+
+## Store Clearn data
+
+```{r}
+write.csv(data_merged, "data_cleaned.csv")
+```
+
+## Guiding questions
+
+* **What tools are you choosing and why?**
+
+We will be using R programming language to work with the large datasets and is easier to visualise data.
+
+* **Have you ensured your data’s integrity?**
+
+Data integrity has been ensured.
+
+* **What steps have you taken to ensure that your data is clean?**
+
+Duplicate values were removed, column names were correctly formatted.
+
+* **How can you verify that your data is clean and ready to analyze?**
+
+The data is cleaned by removing duplicates, and missing values. Erroneous values can be corrected, and proper data types can be assigned to the attributes.
+
+* **Have you documented your cleaning process so you can review and share those results?**
+
+All the steps of this project are documented in this notebook.
+
+## Key tasks
+
+- [x] Check the data for errors.
+- [x] Choose your tools.
+- [x] Transform the data so you can work with it effectively
+- [x] Document the cleaning process.
+
+## Deliverable
+
+A documentation of data cleaning and verification process.
+
+# Analyse
+
+Analysing data for insights.
+
+## Code
+
+```{r}
+data_cleaned <- read.csv("data_cleaned.csv")
+head(data_cleaned)
+```
+
+Summary of the cleaned data.
+
+```{r}
+summary(data_cleaned)
+```
+
+### Population distribution between Casual and Annual members
+
+```{r}
+data_cleaned %>% group_by(member_casual) %>% summarise(count = length(ride_id), '%' = (length(ride_id) / nrow(data_cleaned)) * 100)
+```
+
+```{r}
+options(repr.plot.width = 16, repr.plot.height = 8)
+ggplot(data_cleaned, aes(member_casual, fill=member_casual)) + geom_bar() + labs(x="Casual vs Annual members", title="Chart 1 - Casual vs Annual members distribution")
+```
+
+### Distribution by Month
+
+```{r}
+data_cleaned %>% group_by(year_month) %>% summarise(count = length(ride_id),
+                                                    "%" = (length(ride_id) / nrow(data_cleaned)) * 100,
+                                                    "annual" = (sum(member_casual == "member") / length(ride_id)) * 100,
+                                                    "casual" = (sum(member_casual == "casual") / length(ride_id)) * 100,
+                                                    "Annual vs Casual Percent Difference" = annual - casual)
+```
+
+```{r}
+data_cleaned %>%
+  ggplot(aes(year_month, fill=member_casual)) + geom_bar() + labs(x="Month", title="Chart 2 - Distribution by Month") + coord_flip()
+```
+
+#### Observations from this visualisation
+
+* The month with the biggest count of data points was July, 2021.
+* Almost all months have more annual members than casual members.
+
+### Distribution by Weekday
+
+```{r}
+data_cleaned %>% group_by(weekday) %>% summarise(count = length(ride_id),
+                                                    "%" = (length(ride_id) / nrow(data_cleaned)) * 100,
+                                                    "annual" = (sum(member_casual == "member") / length(ride_id)) * 100,
+                                                    "casual" = (sum(member_casual == "casual") / length(ride_id)) * 100,
+                                                    "Annual vs Casual Percent Difference" = annual - casual)
+```
+
+
+```{r}
+data_cleaned %>%
+  ggplot(aes(weekday, fill=member_casual)) + geom_bar() + labs(x="Weekday", title="Chart 3 - Distribution by Weekday")
+```
+
+#### Observations from this visualisation
+
+* Almost all weekdays have more annual members than casual members.
+* Weekends tend to have more data points.
+* Saturday has highest data points.
+
+### Distribution by hour of the day
+
+```{r}
+data_cleaned %>% group_by(start_hour) %>% summarise(count = length(ride_id),
+                                                    "%" = (length(ride_id) / nrow(data_cleaned)) * 100,
+                                                    "annual" = (sum(member_casual == "member") / length(ride_id)) * 100,
+                                                    "casual" = (sum(member_casual == "casual") / length(ride_id)) * 100,
+                                                    "Annual vs Casual Percent Difference" = annual - casual)
+```
+
+```{r}
+data_cleaned %>%
+  ggplot(aes(start_hour, fill=member_casual)) + geom_bar() + labs(x="Hour", title="Chart 4 - Distribution by hour of the day")
+```
+
+#### Observations from this visualisation
+
+* There are high number of data points between the range 12 to 20 (12 pm to 8pm).
+* Afternoon tends to have high casual members.
+
+### Distribution by Ridable type
+
+```{r}
+data_cleaned %>% group_by(rideable_type) %>% summarise(count = length(ride_id),
+                                                    "%" = (length(ride_id) / nrow(data_cleaned)) * 100,
+                                                    "annual" = (sum(member_casual == "member") / length(ride_id)) * 100,
+                                                    "casual" = (sum(member_casual == "casual") / length(ride_id)) * 100,
+                                                    "Annual vs Casual Percent Difference" = annual - casual)
+```
+
+```{r}
+data_cleaned %>%
+  ggplot(aes(rideable_type, fill=member_casual)) + geom_bar() + labs(x="Hour", title="Chart 5 - Distribution by type of Rides")
+```
+
+#### Observations from this visualisation
+
+* Classic bikes have biggest number of rides.
+* Docked bikes are all used by casuals.
+* Distribution of Casual vs Annual members of Electric bikes is almost symmetrical.
+
+### Distribution by Ride time
+
+```{r}
+data_cleaned %>% 
+    group_by(member_casual) %>% 
+    summarise(mean = mean(ride_time_m),
+              'first_quarter' = as.numeric(quantile(ride_time_m, .25)),
+              'median' = median(ride_time_m),
+              'third_quarter' = as.numeric(quantile(ride_time_m, .75)),
+              'IR' = third_quarter - first_quarter)
+```
+
+```{r}
+data_cleaned %>% ggplot(aes(x=member_casual, y=ride_time_m, fill=member_casual)) +
+    labs(x="Member type", y="Riding time", title="Chart 6 - Distribution of Riding time") +
+    geom_boxplot()
+```
+
+#### Observations from this visualisation
+
+* Casual members have high ride time.
+* Casual riding time is more diverse than the Annual.
+
+## Guiding questions
+
+* **How should you organize your data to perform analysis on it?**
+
+The data is merged from different CSV files and cleaned simultaneously. Later the cleaned data is stored in a separate CSV file.
+
+* **Has your data been properly formatted?**
+
+The data is correctly formatted.
+
+* **What surprises did you discover in the data?**
+
+There are more number of classic bike riders than any other type of bikes, this comes out to be a surprise.
+
+* **What trends or relationships did you find in the data?**
+  * Annual members are more than the Casual members.
+  * People prefer to use bikes in the afternoon more throughout the day.
+  * Annual members most likely use classic bikes.
+  * Casual riders use bikes more in the months of May, June, July, August and September.
+  * Casual members have high ride time.
+  
+* **How will these insights help answer your business questions?**
+
+The insights gained from the data can be used to determine the usage of bikes by casual members and convert them to annual members.
+
+## Key tasks
+
+- [x] Aggregate your data so it’s useful and accessible.
+- [x] Organize and format your data.
+- [x] Perform calculations.
+- [x] Identify trends and relationships.
+
+## Deliverable
+
+- [x] A summary of your analysis
+
+# Share
+
+The gained insights from the data can be shared by presentation. However, this notebook can also be used as a tool to share the insights.
+
+Insights about the data:
+* Annual members are more than the Casual members.
+* People prefer to use bikes in the afternoon more throughout the day.
+* Annual members most likely use classic bikes.
+* Casual riders use bikes more in the months of May, June, July, August and September.
+* Casual members have high ride time.
+
+How the Annual members differ from Casual:
+* Casual riders usage is diverse, whereas, Annual members tend to follow a routine.
+* Casual riders tend to use more bikes for weekends more.
+* Annual members use bikes for routine tasks and usually have lower ride time.
+* Casual members have higher ride time.
+
+Conclusion:
+* Annual riders use bikes for routine activities.
+* Casual riders tend to use bikes on weekends.
+
+## Guiding questions
+
+* **Were you able to answer the question of how annual members and casual riders use Cyclistic bikes differently?**
+
+Yes, the graphs plotted can show the differences between annual and casual riders.
+
+* **What story does your data tell?**
+
+Casual riders use the bikes in diversity whereas the Annual members use the bikes in schedules or routines, like going to work.
+
+* **How do your findings relate to your original question?**
+
+We found some key differences between Annual and Casual riders using the data provided.
+
+* **Who is your audience? What is the best way to communicate with them?**
+
+The target audience are Lily Moremo, the marketing analytics team team, and the executive team. Presentation is a good way of sharing the insights.
+
+* **Can data visualization help you share your findings?**
+
+We extensively used Data Visualisation techniques in R to understand and gain insights about the data.
+
+* **Is your presentation accessible to your audience?**
+
+The visualisation are made using various colours, labels, and legends.
+
+## Key tasks
+
+- [x] Determine the best way to share your findings.
+- [x] Create effective data visualizations.
+- [x] Present your findings.
+- [x] Ensure your work is accessible.
+
+## Deliverable
+
+- [x] Supporting visualizations and key findings.
+
+# Act
+
+Act phase usually happens when the insights and actually used to drive the decisions taken by the company.
+
+## Guiding questions
+
+* **What is your final conclusion based on your analysis?**
+
+Annual and Casual members use the bikes differently.
+
+* **How could your team and business apply your insights?**
+
+The insights can be used to devise marketing strategies to convert casual riders to annual members of the company.
+
+* **What next steps would you or your stakeholders take based on your findings?**
+
+Stakeholders can further analyse the insights and validation of the strategies based on the data.
+
+* **Is there additional data you could use to expand on your findings?**
+    * Data about docked bikes can be biased and should be monitored for new data.
+    * Climate data
+    * Data about motivation of using the bikes.
+
+## Key tasks
+
+- [x] Create your portfolio.
+- [x] Add your case study.
+- [x] Practice presenting your case study to a friend or family member.
+
+## Deliverable
+
+* Your top three recommendations based on your analysis
+
+1. Market strategies to attract casual riders in months of May, June, July to convert to Annual members.
+2. Advertise the benefits use of bikes on the weekends.
+3. Promote classic bikes.
+
+# Conclusion
+
+We analysed a case study of a fictional company called "Cyclistic" and gained some insights from the data provided to use. We used R programming language as our primary tool in Preparing, Processing and Analysing the data. We used R Notebook to share the insights to our stakeholders.
+
+This marks the end of this notebook.
